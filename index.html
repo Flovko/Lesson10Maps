@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8 />
+    <title>Lab 09 Template</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: whitesmoke;
+            font-family: Lato, sans-serif;
+            color: #0D0000;
+        }
+        header {
+            padding: 6px 10%;
+        }
+        h1 {
+            display: inline-block;
+            margin-right: 20px;
+            color: #001323;
+        }
+        h2 {
+            display: inline-block;
+            color: #001323;
+        }
+        #map {
+            width: 80%;
+            height: 540px;
+            margin: 10px auto;
+        }
+        footer {
+            padding: 6px 10%;
+            width: 80%;
+        }
+        p {
+            font-size: 1em;
+            color: #001323;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Nuclear, Solar, and Hydro Power Production Plants</h1>
+        
+    </header>
+
+    <div id='map'></div>
+
+    <footer>
+        <p>Map authored by<br> Francisco Lovko<br> For: MAPS672</p>
+        <p>The above map displays power plants that are fueled by Nuclear, Solar, and Hydro energy to produce electricity.  The circles are proportioned based on the power output of each plant in Kilowatts.  The larger the circle the more power is being produced at that site.   If the viewer clicks on the map it will show all the power plants located within 500 Kilometers from where the user clicked on the map.  Additionally, once the map has been filtered by proximity the user can click on a point to display point specific information.  The map can be further filtered by fuel source.  On the top right corner of the map the viewer can check or uncheck the fuel sources they wish to display or omit. </p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script src="power-plants.js"></script>
+    <script>
+
+        var map = L.map('map', {
+            center: [36,-94],
+            zoom: 4,
+        });
+
+        var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        });
+
+        tiles.addTo(map);
+        
+        plants.features.sort(function(a, b) { 
+            return b.properties.capacity_mw - a.properties.capacity_mw;
+        }); 
+        
+        var commonStyles = {
+            weight: 1,
+            stroke: 1,
+            fillOpacity: .8    
+        }
+        
+          var layerInfo = {
+            nuclearLayer: {source:"Nuclear", color:'#9ffb1b'},
+            solarLayer: {source:"Solar", color:'#fbb034'},
+            hydroLayer: {source:"Hydro", color:'#3807d6'}
+        };
+        
+        var geoJsonLayers = {};
+        
+        for(var layer in layerInfo) {
+            console.log(layer, layerInfo[layer]);
+            geoJsonLayers[layer] = L.geoJson(plants, {
+                pointToLayer: function(feature,latlng){
+                return L.circleMarker(latlng,commonStyles);
+            },
+            filter: function(feature) {
+                if(feature.properties.fuel_source[layerInfo[layer].source]){
+                    return feature;
+                }
+            },
+            style: function(feature){
+                return {
+                color: layerInfo[layer].color,
+                fillColor: layerInfo[layer].color,
+                radius: getRadius(feature.properties.fuel_source[layerInfo[layer].source])    
+                }
+            }
+        }).addTo(map);
+        }
+        function getRadius(val) {
+            var radius = Math.sqrt(val/Math.PI);
+            return radius * .8;
+        } 
+        
+        map.on('click', function(e) {
+            for(var l in geoJsonLayers) { 
+                geoJsonLayers[l].eachLayer(function(layer) {
+                var distance = e.latlng.distanceTo(layer.getLatLng())/1000
+                                                                            
+                if(distance > 500) {
+                    layer.setStyle({
+                        stroke: false,
+                        fill: false
+                    });  
+                } else {
+                    layer.setStyle({
+                        stroke: true,
+                        fill: true  
+            });  
+            var plantName = layer.feature.properties.plant_name;
+            var fuelSource = layerInfo[l].source;        
+                    
+            var popup = "<b>" + plantName + "</b><br>" + "Fuel Source:" + " " +  
+                        "<b>" + fuelSource +"</b><br>" + "I am <b>"+distance.toLocaleString()+
+                        "km</b><br> from the click point."
+                    
+                    layer.bindPopup(popup);
+                    }
+                });
+            }
+        });
+      
+        var sourcelabels = {
+            "<b style='color:#9ffb1b'>Nuclear</b>": geoJsonLayers.nuclearLayer,
+            "<b style='color:#fbb034'>Solar</b>": geoJsonLayers.solarLayer,
+            "<b style='color:#3807d6'>Hydro</b>": geoJsonLayers.hydroLayer
+        }
+        
+        L.control.layers(null, sourcelabels, { collapse:false}).addTo(map);
+  
+    </script>
+
+</body>
+
+</html>
