@@ -144,9 +144,15 @@
             var plantName = layer.feature.properties.plant_name;
             var fuelSource = layerInfo[l].source;        
                     
+            var plantName = layer.feature.properties.plant_name;
+            var fuelSource = layerInfo[l].source;
+            var output = layer.feature.properties.capacity_mw;
+                    console.log(output)
+                    
             var popup = "<b>" + plantName + "</b><br>" + "Fuel Source:" + " " +  
-                        "<b>" + fuelSource +"</b><br>" + "I am <b>"+distance.toLocaleString()+
-                        "km</b><br> from the click point."
+                        "<b>" + fuelSource +"</b><br>" + "Output:" + " " +"<b>" + 
+                        output + " " + "MW" + "</b><br>" + "I am <b>"+ 
+                        distance.toLocaleString()+ "km</b><br> from the click point" 
                     
                     layer.bindPopup(popup);
                     }
